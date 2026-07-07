@@ -1,8 +1,27 @@
 import logging
+import asyncio
+import threading
+from flask import Flask
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-import asyncio
+
+# ======= ПРОСТОЙ ВЕБ-СЕРВЕР ДЛЯ ПИНГОВАНИЯ =======
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "Бот жив!", 200
+
+@app.route('/ping')
+def ping():
+    return "Pong!", 200
+
+def run_flask():
+    app.run(host='0.0.0.0', port=10000)
+
+# Запускаем Flask в отдельном потоке, чтобы он не блокировал бота
+threading.Thread(target=run_flask, daemon=True).start()
 
 # ======= ЗАВТРАКИ =======
 BREAKFAST = {
@@ -239,7 +258,7 @@ SOUPS = {
             "6. Добавляем хмели-сунели, солим по вкусу."
         ]
     },
-    "норвежский сливочный суп": {
+    "норвежский сливочный суп с лососем": {
         "ингредиенты": [
             "Лук — 100 г",
             "Морковь — 100 г",
@@ -457,7 +476,7 @@ PASTA = {
             "Все ингредиенты смешать до однородности."
         ]
     },
-    "паста карбонара": {
+    "паста карбонара в сливках": {
         "ингредиенты": [
             "Спагетти — 70 г",
             "Сливки 20% — 50 г",
@@ -474,7 +493,7 @@ PASTA = {
             "5. Посыпать пармезаном и добавить желток."
         ]
     },
-    "Томатная паста с тимьяном": {
+    "паста в томатном соусе с тимьяном": {
         "ингредиенты": [
             "Рожки — 70 г",
             "Сливки 20% — 50 г",
@@ -490,7 +509,7 @@ PASTA = {
             "4. Выложить на тарелку и посыпать пармезаном."
         ]
     },
-    "соус томатный": {
+    "соус томатный с тимьяном": {
         "ингредиенты": [
             "Томаты с/с — 400 г",
             "Тимьян — 4 г",
@@ -505,7 +524,7 @@ PASTA = {
             "3. Снять с огня и пробить в стакане (осторожно, горячо!)."
         ]
     },
-    "паста тальятелле с каперсами": {
+    "паста тальятелле в мясном соусе с каперсами": {
         "ингредиенты": [
             "Паста — 100 г",
             "Фарш — 300 г",
@@ -903,7 +922,7 @@ def back_keyboard():
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_hot_menu")]
     ])
 
-# ======= КОМАНДЫ =======
+# ======= ОБРАБОТЧИКИ =======
 @dp.message(Command("start"))
 async def start_cmd(message: Message):
     await message.answer(
