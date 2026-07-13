@@ -1026,15 +1026,15 @@ async def show_recipe(callback: CallbackQuery):
     else:
         recipe = None
 
-    HOT_CATEGORIES = {"pasta", "main"}
+    CATEGORY_BACK = {
+        "pasta": "hot_pasta",
+        "main": "hot_main",
+    }
 
     if recipe:
         answer = f"🍳 *{escape_md(recipe_name.capitalize())}*\n\n📦 Ингредиенты:\n- " + "\n- ".join(escape_md(i) for i in recipe["ингредиенты"])
         answer += f"\n\n👨‍🍳 Приготовление:\n" + "\n".join(escape_md(s) for s in recipe["шаги"])
-        if category in HOT_CATEGORIES:
-            back_cb = "back_to_hot_menu"
-        else:
-            back_cb = f"back_menu_{category}"
+        back_cb = CATEGORY_BACK.get(category, f"back_menu_{category}")
         await callback.message.edit_text(answer, parse_mode="Markdown", reply_markup=back_keyboard(back_cb))
     else:
         await callback.message.edit_text("❌ Рецепт не найден.", reply_markup=back_keyboard())
