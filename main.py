@@ -890,11 +890,13 @@ def main_menu_keyboard():
         [InlineKeyboardButton(text="🍰 Десерты", callback_data="menu_desserts")]
     ])
 
-def category_menu_keyboard(category_data, category_name):
+def category_menu_keyboard(category_data, category_name, back_callback="back_to_main", hot_back_callback=None):
     buttons = []
     for name in category_data.keys():
         buttons.append([InlineKeyboardButton(text=name.capitalize(), callback_data=f"{category_name}_{name}")])
-    buttons.append([InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main")])
+    if hot_back_callback:
+        buttons.append([InlineKeyboardButton(text="⬅️ Назад в горячее", callback_data=hot_back_callback)])
+    buttons.append([InlineKeyboardButton(text="⬅️ Назад в меню", callback_data=back_callback)])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def hot_menu_keyboard():
@@ -946,7 +948,7 @@ async def show_hot_menu(callback: CallbackQuery):
 async def show_pasta_menu(callback: CallbackQuery):
     await callback.message.edit_text(
         "📋 Пасты:\nВыбери блюдо:",
-        reply_markup=category_menu_keyboard(PASTA, "pasta")
+        reply_markup=category_menu_keyboard(PASTA, "pasta", hot_back_callback="back_to_hot_menu")
     )
     await callback.answer()
 
@@ -954,7 +956,7 @@ async def show_pasta_menu(callback: CallbackQuery):
 async def show_main_dishes_menu(callback: CallbackQuery):
     await callback.message.edit_text(
         "📋 Вторые блюда:\nВыбери блюдо:",
-        reply_markup=category_menu_keyboard(MAIN_DISHES, "main")
+        reply_markup=category_menu_keyboard(MAIN_DISHES, "main", hot_back_callback="back_to_hot_menu")
     )
     await callback.answer()
 
