@@ -460,20 +460,6 @@ PASTA = {
             "4. Выкладываем на тарелку, посыпаем пармезаном, добавляем базилик и второй желток в центр."
         ]
     },
-    "соус томатный": {
-        "ингредиенты": [
-            "Томаты с/с — 200 г",
-            "Оливковое масло — 30 г",
-            "Песто соус — 20 г",
-            "Соль — 8 г",
-            "Сахар — 10 г",
-            "Перечный соус — 5 г",
-            "Паста Том ям — 8 г"
-        ],
-        "шаги": [
-            "Все ингредиенты смешать до однородности."
-        ]
-    },
     "паста карбонара": {
         "ингредиенты": [
             "Спагетти — 70 г",
@@ -884,6 +870,11 @@ SALADS = {
 # ======= НАСТРОЙКИ БОТА =======
 API_TOKEN = "8684451450:AAFJ5eJPtu85Dpd9nrOAl08aQ5etyPLQuqM"
 
+def escape_md(text):
+    for ch in ('*', '_', '[', '`'):
+        text = text.replace(ch, '\\' + ch)
+    return text
+
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
@@ -913,9 +904,9 @@ def hot_menu_keyboard():
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main")]
     ])
 
-def back_keyboard():
+def back_keyboard(back_callback="back_to_hot_menu"):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_hot_menu")]
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data=back_callback)]
     ])
 
 # ======= ОБРАБОТЧИКИ =======
@@ -1000,6 +991,20 @@ async def back_to_hot_menu(callback: CallbackQuery):
     )
     await callback.answer()
 
+@dp.callback_query(lambda c: c.data.startswith("back_menu_"))
+async def back_to_category_menu(callback: CallbackQuery):
+    category = callback.data.split("_", 2)[2]
+    menus = {
+        "breakfast": ("📋 Меню завтраков:\nВыбери блюдо:", BREAKFAST, "breakfast"),
+        "soup": ("📋 Меню супов:\nВыбери блюдо:", SOUPS, "soup"),
+        "salad": ("📋 Салаты:\nВыбери блюдо:", SALADS, "salad"),
+        "dessert": ("📋 Десерты:\nВыбери блюдо:", DESSERTS, "dessert"),
+    }
+    if category in menus:
+        text, data, name = menus[category]
+        await callback.message.edit_text(text, reply_markup=category_menu_keyboard(data, name))
+    await callback.answer()
+
 @dp.callback_query(lambda c: c.data.startswith("breakfast_") or c.data.startswith("soup_") or c.data.startswith("pasta_") or c.data.startswith("main_") or c.data.startswith("salad_") or c.data.startswith("dessert_"))
 async def show_recipe(callback: CallbackQuery):
     parts = callback.data.split("_", 1)
@@ -1021,10 +1026,16 @@ async def show_recipe(callback: CallbackQuery):
     else:
         recipe = None
 
+    HOT_CATEGORIES = {"pasta", "main"}
+
     if recipe:
-        answer = f"🍳 *{recipe_name.capitalize()}*\n\n📦 Ингредиенты:\n- " + "\n- ".join(recipe["ингредиенты"])
-        answer += f"\n\n👨‍🍳 Приготовление:\n" + "\n".join(recipe["шаги"])
-        await callback.message.edit_text(answer, parse_mode="Markdown", reply_markup=back_keyboard())
+        answer = f"🍳 *{escape_md(recipe_name.capitalize())}*\n\n📦 Ингредиенты:\n- " + "\n- ".join(escape_md(i) for i in recipe["ингредиенты"])
+        answer += f"\n\n👨‍🍳 Приготовление:\n" + "\n".join(escape_md(s) for s in recipe["шаги"])
+        if category in HOT_CATEGORIES:
+            back_cb = "back_to_hot_menu"
+        else:
+            back_cb = f"back_menu_{category}"
+        await callback.message.edit_text(answer, parse_mode="Markdown", reply_markup=back_keyboard(back_cb))
     else:
         await callback.message.edit_text("❌ Рецепт не найден.", reply_markup=back_keyboard())
     await callback.answer()
