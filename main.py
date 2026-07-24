@@ -49,6 +49,9 @@ def escape_md(text):
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
+ADMIN_CHAT_ID = 1400721685
+RUNNING_FLAG = os.path.join(os.path.dirname(__file__), ".running")
+
 logging.basicConfig(level=logging.INFO)
 
 # ======= КНОПКИ =======
@@ -215,6 +218,12 @@ async def show_recipe(callback: CallbackQuery):
 
 # ======= ЗАПУСК =======
 async def main():
+    if os.path.exists(RUNNING_FLAG):
+        try:
+            await bot.send_message(ADMIN_CHAT_ID, "⚠️ Извини, я отключался, но теперь всё снова работает!")
+        except Exception as e:
+            logging.warning(f"Не удалось отправить уведомление: {e}")
+    open(RUNNING_FLAG, "w").close()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
