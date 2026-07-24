@@ -3,6 +3,7 @@ import asyncio
 import threading
 import json
 import os
+import time
 from flask import Flask
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -28,21 +29,25 @@ threading.Thread(target=run_flask, daemon=True).start()
 
 # ======= РЕЦЕПТЫ (из JSON) =======
 RECIPES_PATH = os.path.join(os.path.dirname(__file__), "recipes.json")
-with open(RECIPES_PATH, "r", encoding="utf-8") as f:
-    _data = json.load(f)
+try:
+    with open(RECIPES_PATH, "r", encoding="utf-8") as f:
+        _data = json.load(f)
 
-BREAKFAST = _data["breakfast"]
-SOUPS = _data["soups"]
-PASTA = _data["pasta"]
-MAIN_DISHES = _data["main_dishes"]
-DESSERTS = _data["desserts"]
-SALADS = _data["salads"]
+    BREAKFAST = _data["breakfast"]
+    SOUPS = _data["soups"]
+    PASTA = _data["pasta"]
+    MAIN_DISHES = _data["main_dishes"]
+    DESSERTS = _data["desserts"]
+    SALADS = _data["salads"]
+except Exception as e:
+    logging.error(f"Ошибка загрузки recipes.json: {e}")
+    raise
 
 # ======= НАСТРОЙКИ БОТА =======
 API_TOKEN = "8684451450:AAFJ5eJPtu85Dpd9nrOAl08aQ5etyPLQuqM"
 
 def escape_md(text):
-    for ch in ('*', '_', '[', '`'):
+    for ch in ('\\', '*', '_', '[', '`'):
         text = text.replace(ch, '\\' + ch)
     return text
 
@@ -218,12 +223,17 @@ async def show_recipe(callback: CallbackQuery):
 
 # ======= ЗАПУСК =======
 async def main():
+    now = time.time()
     if os.path.exists(RUNNING_FLAG):
         try:
-            await bot.send_message(ADMIN_CHAT_ID, "⚠️ Извини, я отключался, но теперь всё снова работает!")
+            with open(RUNNING_FLAG, "r") as f:
+                last_run = float(f.read().strip())
+            if now - last_run > 300:
+                await bot.send_message(ADMIN_CHAT_ID, "⚠️ Извини, я отключался, но теперь всё снова работает!")
         except Exception as e:
             logging.warning(f"Не удалось отправить уведомление: {e}")
-    open(RUNNING_FLAG, "w").close()
+    with open(RUNNING_FLAG, "w") as f:
+        f.write(str(now))
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
